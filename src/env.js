@@ -15,7 +15,7 @@ export const env = createEnv({
       .string()
       .url()
       .refine(
-        (str) => !str.includes("postgres:password@localhost"),
+        (str) => !str.includes("mongodb+srv://admin:<db_password>"),
         "You forgot to change the default URL"
       ),
   },
