@@ -7,6 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ResolutionType {
+  Count
+  Percentage
+  Binary
+  CheckIn
+  BigGoal
+}
+
+enum Frequency {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+}
+
 model User {
   id          String       @id @default(auto()) @map("_id") @db.ObjectId
   userName    String       @unique
@@ -16,12 +30,112 @@ model User {
 }
 
 model Resolution {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  user      User     @relation(fields: [userId], references: [id])
-  userId    String   @db.ObjectId
-  title     String
-  completed DateTime
-  year      Int
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  user   User   @relation(fields: [userId], references: [id])
+  userId String @db.ObjectId
+  year   Int
+
+  // Users resolutions for the year
+  countResolutions      CountResolution[]
+  percentageResolutions PercentageResolution[]
+  binaryResolutions     BinaryResolution[]
+  checkInResolutions    CheckInResolution[]
+  bigGoalResolutions    BigGoalResolution[]
 
   @@index([year], name: "yearIndex")
+}
+
+// Count Resolution
+// Goal is to count the number of times a task is done throught year (eg. 12 books in a year)
+model CountResolution {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  resolution   Resolution @relation(fields: [resolutionId], references: [id])
+  resolutionId String     @unique @db.ObjectId
+  title        String
+  createdAt    DateTime   @default(now())
+
+  targetCount  Int
+  currentCount Int        @default(0)
+  countLogs    CountLog[]
+}
+
+model CountLog {
+  id      String          @id @default(auto()) @map("_id") @db.ObjectId
+  count   CountResolution @relation(fields: [countId], references: [id])
+  countId String          @db.ObjectId
+
+  date DateTime @default(now())
+  note String?
+}
+
+// Percentage Resolution
+// Goal is to track the measurement of a task (eg. weight loss, body fat percentage)
+model PercentageResolution {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  resolution   Resolution @relation(fields: [resolutionId], references: [id])
+  resolutionId String     @unique @db.ObjectId
+  title        String
+  createdAt    DateTime   @default(now())
+
+  targetPercentage  Float
+  currentPercentage Float @default(0)
+}
+
+// Binary Resolution
+// Goal is to track the completion of a task (eg. Take GMAT test)
+model BinaryResolution {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  resolution   Resolution @relation(fields: [resolutionId], references: [id])
+  resolutionId String     @unique @db.ObjectId
+  title        String
+  createdAt    DateTime   @default(now())
+
+  completed     Boolean   @default(false)
+  completedDate DateTime?
+}
+
+// CheckIn Resolution
+// Goal is to check in on a task (eg. meditation, journaling)
+model CheckInResolution {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  resolution   Resolution @relation(fields: [resolutionId], references: [id])
+  resolutionId String     @unique @db.ObjectId
+  title        String
+  createdAt    DateTime   @default(now())
+
+  frequency   Frequency
+  checkInLogs CheckInLog[]
+}
+
+model CheckInLog {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  CheckIn   CheckInResolution @relation(fields: [checkInId], references: [id])
+  checkInId String            @db.ObjectId
+
+  date DateTime
+  note String?
+}
+
+// Big Goal Resolution
+// Goal is to break down a big goal into smaller sub-goals (eg. run a marathon)
+model BigGoalResolution {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  resolution   Resolution @relation(fields: [resolutionId], references: [id])
+  resolutionId String     @unique @db.ObjectId
+  title        String
+  createdAt    DateTime   @default(now())
+
+  subGoals      SubGoal[]
+  completed     Boolean   @default(false)
+  completedDate DateTime?
+}
+
+model SubGoal {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  bigGoal   BigGoalResolution @relation(fields: [bigGoalId], references: [id])
+  bigGoalId String            @db.ObjectId
+
+  title         String
+  completed     Boolean   @default(false)
+  completedDate DateTime?
 }
